@@ -6,9 +6,9 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.ParticleStatus;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.BlockHitResult;
@@ -188,7 +188,7 @@ public final class ShadowClient implements ClientModInitializer {
         if (!ShadowConfig.autoTotem || mc.player == null || mc.gameMode == null) return;
         // Player inventory menu slot 45 is the offhand; SWAP button 0..8 maps to hotbar slots.
         var inventory = mc.player.getInventory();
-        if (inventory.offhand.get(0).is(Items.TOTEM_OF_UNDYING)) return;
+        if (mc.player.getItemBySlot(EquipmentSlot.OFFHAND).is(Items.TOTEM_OF_UNDYING)) return;
         for (int i = 0; i < 9; i++) {
             if (inventory.getItem(i).is(Items.TOTEM_OF_UNDYING)) {
                 mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, 45, i, ClickType.SWAP, mc.player);
@@ -202,7 +202,11 @@ public final class ShadowClient implements ClientModInitializer {
         int x = mc.getWindow().getGuiScaledWidth() / 2 - 90;
         int y = mc.getWindow().getGuiScaledHeight() - 58;
         int index = 0;
-        for (var stack : mc.player.getArmorSlots()) {
+        for (var stack : java.util.List.of(
+            mc.player.getItemBySlot(EquipmentSlot.FEET),
+            mc.player.getItemBySlot(EquipmentSlot.LEGS),
+            mc.player.getItemBySlot(EquipmentSlot.CHEST),
+            mc.player.getItemBySlot(EquipmentSlot.HEAD))) {
             int px = x + index * 20;
             g.fill(px - 2, y - 2, px + 18, y + 18, 0x880D0914);
             if (!stack.isEmpty()) {
@@ -275,21 +279,18 @@ public final class ShadowClient implements ClientModInitializer {
         if (mc == null || mc.options == null) return;
         switch (ShadowConfig.performanceProfile) {
             case 1 -> { // FPS Boost
-                mc.options.particles().set(ParticleStatus.MINIMAL);
                 mc.options.entityShadows().set(false);
                 mc.options.ambientOcclusion().set(false);
                 mc.options.renderDistance().set(Math.min(mc.options.renderDistance().get(), 6));
                 mc.options.simulationDistance().set(Math.min(mc.options.simulationDistance().get(), 4));
             }
             case 2 -> { // Quality
-                mc.options.particles().set(ParticleStatus.ALL);
                 mc.options.entityShadows().set(true);
                 mc.options.ambientOcclusion().set(true);
                 mc.options.renderDistance().set(Math.max(mc.options.renderDistance().get(), 12));
                 mc.options.simulationDistance().set(Math.max(mc.options.simulationDistance().get(), 8));
             }
             default -> { // Balanced
-                mc.options.particles().set(ParticleStatus.DECREASED);
                 mc.options.entityShadows().set(true);
                 mc.options.ambientOcclusion().set(true);
                 mc.options.renderDistance().set(10);
@@ -301,7 +302,6 @@ public final class ShadowClient implements ClientModInitializer {
 
     public static void restorePerformanceDefaults(Minecraft mc) {
         if (mc == null || mc.options == null) return;
-        mc.options.particles().set(ParticleStatus.ALL);
         mc.options.entityShadows().set(true);
         mc.options.ambientOcclusion().set(true);
         mc.options.renderDistance().set(12);
